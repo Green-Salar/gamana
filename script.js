@@ -1,6 +1,75 @@
 // Gamana Studio - Interactive Gaming Elements
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Initialize EmailJS
+    (function() {
+        emailjs.init("EC0-L91uKJXwLgd8n");
+    })();
+    
+    // Unified EmailJS function for all forms
+    function sendEmailJS(formData, formType, submitBtn, originalText) {
+        // Validate required fields
+        if (!formData.from_name || !formData.from_email) {
+            showSuccessMessage('لطفاً نام و ایمیل خود را وارد کنید.');
+            return;
+        }
+        
+        // Show loading state
+        submitBtn.innerHTML = '<span class="btn-icon">⏳</span><span class="btn-text">در حال ارسال...</span>';
+        submitBtn.disabled = true;
+        
+        // Add timestamp and additional metadata
+        const completeFormData = {
+            ...formData,
+            timestamp: new Date().toLocaleString('fa-IR'),
+            website: 'Gamana Studio',
+            user_agent: navigator.userAgent,
+            page_url: window.location.href
+        };
+        
+        console.log('Sending form data:', completeFormData);
+        
+        // Send email using EmailJS
+        emailjs.send('service_5gf4jhl', 'template_ddsrjvr', completeFormData)
+            .then(function(response) {
+                console.log('Email sent successfully!', response.status, response.text);
+                
+                // Show success message
+                submitBtn.innerHTML = '<span class="btn-icon">✅</span><span class="btn-text">ارسال شد!</span>';
+                submitBtn.style.background = 'linear-gradient(45deg, #00ff88, #00d4ff)';
+                
+                // Show notification
+                if (formType === 'contact') {
+                    showSuccessMessage('پیام شما با موفقیت ارسال شد! به زودی با شما تماس خواهیم گرفت.');
+                } else if (formType === 'job') {
+                    showSuccessMessage('درخواست شغل شما با موفقیت ارسال شد! به زودی با شما تماس خواهیم گرفت.');
+                }
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                    submitBtn.disabled = false;
+                    if (submitBtn.closest('form')) {
+                        submitBtn.closest('form').reset();
+                    }
+                }, 3000);
+            }, function(error) {
+                console.log('Failed to send email...', error);
+                
+                // Show error message
+                submitBtn.innerHTML = '<span class="btn-icon">❌</span><span class="btn-text">خطا در ارسال</span>';
+                submitBtn.style.background = 'linear-gradient(45deg, #ff0040, #ff4080)';
+                
+                showSuccessMessage('خطا در ارسال. لطفاً دوباره تلاش کنید.');
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.background = '';
+                    submitBtn.disabled = false;
+                }, 3000);
+            });
+    }
+    
     // Create custom cursor
     const cursor = document.createElement('div');
     cursor.className = 'cursor';
@@ -353,18 +422,26 @@ document.addEventListener('DOMContentLoaded', function() {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Show success message
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
-            submitBtn.innerHTML = '<span class="btn-icon">✅</span><span class="btn-text">پیام ارسال شد!</span>';
-            submitBtn.style.background = 'linear-gradient(45deg, #00ff88, #00d4ff)';
+            // Prepare email data - ALL FIELDS INCLUDED
+            const templateParams = {
+                from_name: this.querySelector('#name').value,
+                from_email: this.querySelector('#email').value,
+                subject: this.querySelector('#subject').value,
+                message: this.querySelector('#message').value,
+                to_name: 'Gamana Studio',
+                form_type: 'Contact Form',
+                phone: '', // Contact form doesn't have phone
+                experience: '', // Contact form doesn't have experience
+                skills: '', // Contact form doesn't have skills
+                portfolio: '', // Contact form doesn't have portfolio
+                job_type: 'Contact Inquiry'
+            };
             
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.style.background = '';
-                this.reset();
-            }, 3000);
+            // Use unified EmailJS function
+            sendEmailJS(templateParams, 'contact', submitBtn, originalText);
         });
     }
     
@@ -578,24 +655,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Submit application
     function submitApplication(jobType, form) {
-        const formData = new FormData(form);
-        const applicationData = {
-            jobType: jobType,
-            name: form.querySelector('#applicant-name').value,
-            email: form.querySelector('#applicant-email').value,
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        
+        // Prepare email data for job application - ALL FIELDS INCLUDED
+        const templateParams = {
+            from_name: form.querySelector('#applicant-name').value,
+            from_email: form.querySelector('#applicant-email').value,
             phone: form.querySelector('#applicant-phone').value,
             experience: form.querySelector('#applicant-experience').value,
             skills: form.querySelector('#applicant-skills').value,
             portfolio: form.querySelector('#applicant-portfolio').value,
             message: form.querySelector('#applicant-message').value,
-            timestamp: new Date().toISOString()
+            job_type: jobType,
+            to_name: 'Gamana Studio HR',
+            form_type: 'Job Application',
+            subject: `Job Application for ${jobType}` // Add subject for job applications
         };
         
-        // Show success message
-        showSuccessMessage('درخواست شما با موفقیت ارسال شد! به زودی با شما تماس خواهیم گرفت.');
-        
-        // In a real application, you would send this data to a server
-        console.log('Application submitted:', applicationData);
+        // Use unified EmailJS function
+        sendEmailJS(templateParams, 'job', submitBtn, originalText);
     }
     
     // Show success message
