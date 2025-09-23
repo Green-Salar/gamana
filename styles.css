@@ -1323,6 +1323,7 @@ h2::after {
 /* Jobs Section */
 .jobs {
     background: #111111;
+    display: none; /* Hide the jobs section */
 }
 
 .jobs-intro {
